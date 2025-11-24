@@ -1,73 +1,149 @@
-# Welcome to your Lovable project
+# LangchainMCP
 
-## Project info
+> **LangchainMCP: Production-grade MCP server for multi-agent workflows using LangGraph + FastAPI.**
 
-**URL**: https://lovable.dev/projects/53755e18-c97a-45d8-b1b4-ef28e1e31ddd
+[![GitHub Stars](https://img.shields.io/github/stars/mcpmessenger/LangchainMCP?style=social)](https://github.com/mcpmessenger/LangchainMCP)
+[![GitHub Forks](https://img.shields.io/github/forks/mcpmessenger/LangchainMCP?style=social)](https://github.com/mcpmessenger/LangchainMCP)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/langchain-mcp?label=PyPI%20Downloads)](https://pypi.org/project/langchain-mcp/)
+[![License](https://img.shields.io/github/license/mcpmessenger/LangchainMCP)](https://github.com/mcpmessenger/LangchainMCP/blob/main/LICENSE)
 
-## How can I edit this code?
+## 🚀 Why LangchainMCP?
 
-There are several ways of editing your application.
+Building reliable, scalable, and production-ready AI agents is hard. LangchainMCP solves this by providing a **high-performance, standardized server** for your multi-agent applications. Leverage the power of **LangGraph** for complex state management and **FastAPI** for blazing-fast, asynchronous serving.
 
-**Use Lovable**
+| Feature | LangchainMCP | Traditional Agent Setup |
+| :--- | :--- | :--- |
+| **Protocol** | Model Context Protocol (MCP) | Custom/Ad-hoc API |
+| **Orchestration** | LangGraph (Stateful, Cyclic) | Simple Chains (Stateless, Linear) |
+| **Performance** | **&lt;5s P95 Latency** (Placeholder) | Highly Variable |
+| **Deployment** | FastAPI (Scalable, Async) | Single-threaded scripts |
+| **Tooling** | Standardized, Discoverable | Manual Definition |
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/53755e18-c97a-45d8-b1b4-ef28e1e31ddd) and start prompting.
+## ✨ Quick Demo: Document-to-Insight Workflow
 
-Changes made via Lovable will be committed automatically to this repo.
+See how quickly you can go from a raw document to a structured, agent-verified output.
 
-**Use your preferred IDE**
+**(Placeholder for GIF/Video Demo: Please create a visual that shows the following flow)**
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+1.  **Input:** A user uploads a PDF document (e.g., a financial report).
+2.  **Agent Chain:**
+    *   **Extraction Agent:** Uses a tool to read the PDF and extract raw text.
+    *   **Analysis Agent:** Takes the raw text, identifies key metrics (e.g., revenue, profit), and stores them in a structured format.
+    *   **Verification Agent:** Cross-references the extracted metrics with a secondary source or a pre-defined schema, flagging any inconsistencies.
+3.  **Output:** The final, verified, structured JSON data is returned to the user.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🛠️ Installation
 
-Follow these steps:
+### PyPI (Recommended)
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+pip install langchain-mcp
 ```
 
-**Edit a file directly in GitHub**
+### Docker
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+For a production-ready, isolated environment, use our official Docker image:
 
-**Use GitHub Codespaces**
+```bash
+docker pull mcpmessenger/langchain-mcp:latest
+docker run -d -p 8000:8000 mcpmessenger/langchain-mcp:latest
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 💻 Usage
 
-## What technologies are used for this project?
+### 1. Define Your Agent Graph
 
-This project is built with:
+Create your LangGraph workflow in a file (e.g., `graph.py`).
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```python
+# graph.py
+from langgraph.graph import StateGraph, END
+from typing import TypedDict, Annotated, List
+import operator
 
-## How can I deploy this project?
+# Define the state
+class AgentState(TypedDict):
+    document: str
+    metrics: dict
+    verified: bool
+    
+# Define the nodes (agents)
+def extract_agent(state):
+    # Logic to extract text from state['document']
+    return {"metrics": {"revenue": 1000000, "profit": 50000}}
 
-Simply open [Lovable](https://lovable.dev/projects/53755e18-c97a-45d8-b1b4-ef28e1e31ddd) and click on Share -> Publish.
+def verify_agent(state):
+    # Logic to verify metrics
+    return {"verified": True}
 
-## Can I connect a custom domain to my Lovable project?
+# Build the graph
+workflow = StateGraph(AgentState)
+workflow.add_node("extract", extract_agent)
+workflow.add_node("verify", verify_agent)
+workflow.set_entry_point("extract")
+workflow.add_edge("extract", "verify")
+workflow.add_edge("verify", END)
 
-Yes, you can!
+app = workflow.compile()
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### 2. Run the MCP Server
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+LangchainMCP automatically discovers and serves your LangGraph application via FastAPI.
+
+```bash
+# Start the server, pointing to your compiled graph object
+langchain-mcp serve graph:app
+```
+
+### 3. Client Interaction
+
+Use the `langchain-mcp-client` to interact with your new server.
+
+```python
+from langchain_mcp.client import MCPClient
+
+# Initialize the client
+client = MCPClient(server_url="http://localhost:8000")
+
+# Define the initial state for the workflow
+initial_state = {"document": "path/to/financial_report.pdf"}
+
+# Run the workflow
+result = client.run_workflow(
+    workflow_name="default", # The default workflow name for a single graph
+    input_state=initial_state
+)
+
+print(result)
+# Expected Output: {'document': '...', 'metrics': {'revenue': 1000000, 'profit': 50000}, 'verified': True}
+```
+
+## 📊 Benchmarks
+
+LangchainMCP is built for speed and reliability. Our performance targets ensure your agents can handle high-throughput, low-latency demands.
+
+| Metric | Target | Notes |
+| :--- | :--- | :--- |
+| **P95 Latency** | **&lt;5s** | End-to-end workflow execution time. |
+| **Throughput** | **50+ RPS** | Requests per second on standard hardware. |
+| **Memory Footprint** | **&lt;100MB** | Minimal overhead for the server process. |
+
+*(Note: These are target benchmarks. Actual performance may vary based on the complexity of your LangGraph and the LLM provider's latency.)*
+
+## 🧑‍💻 Tech Stack
+
+| Component | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Core** | ![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white) | The primary language for the entire stack. |
+| **Server** | ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white) | High-performance, asynchronous web framework. |
+| **Orchestration** | ![LangChain](https://img.shields.io/badge/LangChain-222222?style=flat-square&logo=langchain&logoColor=white) / ![LangGraph](https://img.shields.io/badge/LangGraph-222222?style=flat-square&logo=langchain&logoColor=white) | State management and multi-agent coordination. |
+| **Protocol** | Model Context Protocol (MCP) | Standardized tool and context sharing. |
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## 📜 License
+
+This project is licensed under the [MIT License](LICENSE).

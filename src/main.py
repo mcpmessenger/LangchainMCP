@@ -74,12 +74,18 @@ async def startup_event():
     """Initialize the agent on server startup"""
     logger.info("Starting LangChain Agent MCP Server...")
     try:
-        # Initialize the agent
-        agent = get_agent()
-        logger.info("Server started successfully. Agent ready.")
+        # Initialize the agent (lazy loading - will initialize on first use)
+        # Don't fail startup if API key is missing - will fail on first request instead
+        if os.getenv("OPENAI_API_KEY"):
+            agent = get_agent()
+            logger.info("Server started successfully. Agent ready.")
+        else:
+            logger.warning("OPENAI_API_KEY not set. Agent will initialize on first request.")
+            logger.info("Server started successfully. Agent will initialize on first use.")
     except Exception as e:
         logger.error(f"Failed to initialize agent: {e}")
-        raise
+        # Don't raise - allow server to start, will fail on first request
+        logger.warning("Server starting without agent pre-initialization")
 
 
 @app.get("/")

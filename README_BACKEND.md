@@ -167,6 +167,46 @@ Then run:
 docker-compose up
 ```
 
+## Google Cloud Run Deployment
+
+For detailed Cloud Run deployment instructions, see **[DEPLOY_CLOUD_RUN.md](DEPLOY_CLOUD_RUN.md)**.
+
+### Quick Deploy
+
+**Using deployment script:**
+```bash
+# Linux/Mac
+./deploy-cloud-run.sh your-project-id us-central1
+
+# Windows PowerShell
+.\deploy-cloud-run.ps1 -ProjectId "your-project-id" -Region "us-central1"
+```
+
+**Manual deployment:**
+```bash
+# Build and push
+docker build -t gcr.io/YOUR_PROJECT_ID/langchain-agent-mcp-server .
+docker push gcr.io/YOUR_PROJECT_ID/langchain-agent-mcp-server
+
+# Deploy
+gcloud run deploy langchain-agent-mcp-server \
+    --image gcr.io/YOUR_PROJECT_ID/langchain-agent-mcp-server \
+    --platform managed \
+    --region us-central1 \
+    --allow-unauthenticated \
+    --memory 2Gi \
+    --cpu 2 \
+    --set-env-vars "OPENAI_MODEL=gpt-4o-mini"
+```
+
+**Set OpenAI API Key:**
+```bash
+# Using Secret Manager (recommended)
+gcloud run services update langchain-agent-mcp-server \
+    --update-secrets=OPENAI_API_KEY=openai-api-key:latest \
+    --region us-central1
+```
+
 ## Configuration
 
 ### Environment Variables

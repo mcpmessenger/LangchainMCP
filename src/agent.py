@@ -7,7 +7,7 @@ This module defines the LangChain agent with its tools and execution logic.
 import os
 from typing import List, Optional
 from langchain_openai import ChatOpenAI
-from langchain.tools import Tool
+from langchain_core.tools import Tool
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain import hub
 from langchain.prompts import PromptTemplate
