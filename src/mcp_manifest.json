@@ -1,0 +1,22 @@
+{
+  "name": "langchain-agent-mcp-server",
+  "version": "1.0.0",
+  "description": "LangChain Agent MCP Server - Exposes advanced reasoning and tool-use capabilities of a LangChain agent via MCP protocol",
+  "tools": [
+    {
+      "name": "agent_executor",
+      "description": "Execute a complex, multi-step reasoning task using a LangChain agent. The agent can use tools like web search and weather lookup to answer questions and perform tasks.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "The user's query or task to be executed by the agent"
+          }
+        },
+        "required": ["query"]
+      }
+    }
+  ]
+}
+
