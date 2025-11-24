@@ -186,11 +186,29 @@ Content-Type: application/json
 
 ## 📚 Documentation
 
+📖 **[Full Documentation Site](https://mcpmessenger.github.io/LangchainMCP/)** - Complete documentation with examples (GitHub Pages)
+
+**Quick Links:**
+- **[Getting Started](docs/getting-started.md)** - Set up and run locally
+- **[Examples](docs/examples.md)** - Code examples including **"Build a RAG agent in 10 lines"**
+- **[Deployment Guide](docs/deployment.md)** - Deploy to Google Cloud Run
+- **[API Reference](docs/api-reference.md)** - Complete API documentation
+- **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions
+
+**Build Docs Locally:**
+```powershell
+# Windows
+.\build-docs.ps1 serve
+
+# Linux/Mac
+./build-docs.sh serve
+```
+
+**Additional Guides:**
 - **[README_BACKEND.md](README_BACKEND.md)** - Complete technical documentation
 - **[DEPLOY_CLOUD_RUN_WINDOWS.md](DEPLOY_CLOUD_RUN_WINDOWS.md)** - Windows deployment guide
 - **[INSTALL_PREREQUISITES.md](INSTALL_PREREQUISITES.md)** - Prerequisites installation
 - **[SLASHMCP_INTEGRATION.md](SLASHMCP_INTEGRATION.md)** - SlashMCP integration guide
-- **[SERVICE_READY.md](SERVICE_READY.md)** - Service status and testing
 
 ## 🧪 Testing
 
