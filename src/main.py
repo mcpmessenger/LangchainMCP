@@ -288,6 +288,40 @@ async def get_manifest():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/tools")
+async def list_tools():
+    """
+    Tool Listing Endpoint (MCP Compatibility)
+    
+    Returns a list of available tools. This endpoint provides tool discovery
+    functionality for MCP clients that need to enumerate available tools.
+    
+    Returns the same tool information as /mcp/manifest but in a simplified format.
+    """
+    logger.info("GET /tools - Returning tool list")
+    try:
+        manifest_path = os.path.join(
+            os.path.dirname(__file__),
+            "mcp_manifest.json"
+        )
+        with open(manifest_path, "r") as f:
+            manifest = json.load(f)
+        
+        # Return tools array from manifest
+        return {
+            "tools": manifest.get("tools", [])
+        }
+    except FileNotFoundError:
+        logger.error("Manifest file not found")
+        raise HTTPException(status_code=500, detail="Manifest file not found")
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON in manifest: {e}")
+        raise HTTPException(status_code=500, detail="Invalid manifest format")
+    except Exception as e:
+        logger.error(f"Error loading tools: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/tasks")
 async def list_tasks(
     authorization: Optional[str] = Header(None),
@@ -376,9 +410,18 @@ async def invoke_tool(
         )
     
     # Extract optional system_instruction from arguments
+    # Only use it if explicitly provided and not empty/whitespace
     system_instruction = request.arguments.get("system_instruction")
-    if system_instruction:
-        logger.info(f"Using custom system instruction (length: {len(str(system_instruction))})")
+    if system_instruction is not None:
+        # Convert to string and strip whitespace
+        system_instruction = str(system_instruction).strip()
+        if not system_instruction:  # Empty or whitespace-only
+            system_instruction = None
+        else:
+            logger.info(f"Using custom system instruction (length: {len(system_instruction)})")
+    else:
+        # Explicitly set to None to ensure it's not passed
+        system_instruction = None
 
     # Optional task_id for workflow resumption/monitoring (Glazyr)
     task_id = request.arguments.get("task_id") or str(uuid.uuid4())
@@ -387,8 +430,25 @@ async def invoke_tool(
     logger.info(f"Executing agent with query: {query[:100]}...")
     
     try:
-        # Get the agent executor (with custom instruction if provided)
-        agent_executor = get_agent(system_instruction=system_instruction)
+        # Get the agent executor
+        # CRITICAL: Only pass system_instruction if it's explicitly provided and not empty
+        # This prevents the "unexpected keyword argument" error
+        if system_instruction is not None and system_instruction:
+            # system_instruction is provided and non-empty, use it
+            try:
+                agent_executor = get_agent(system_instruction=system_instruction)
+            except TypeError as e:
+                # Fallback: if get_agent doesn't accept system_instruction (older version), use default
+                logger.warning(f"get_agent() doesn't accept system_instruction parameter (may be older version): {e}. Using default agent.")
+                agent_executor = get_agent()
+            except Exception as e:
+                # Catch any other errors and fall back to default
+                logger.warning(f"Error creating agent with system_instruction: {e}. Using default agent.")
+                agent_executor = get_agent()
+        else:
+            # No system_instruction provided (None or empty), use default agent
+            # IMPORTANT: Do NOT pass system_instruction parameter at all
+            agent_executor = get_agent()
 
         # Track task state without storing raw query (no screenshot/base64 persistence)
         started = now_ts()
@@ -421,6 +481,13 @@ async def invoke_tool(
         
         # Extract the final answer
         final_answer = result.get("output", "No output generated")
+        
+        # Parse JSON in the response and convert to conversational text
+        try:
+            from src.json_parser import parse_json_response
+            final_answer = parse_json_response(final_answer)
+        except Exception as e:
+            logger.debug(f"JSON parsing not applied (may not be needed): {e}")
         
         logger.info("Agent execution completed successfully")
 
